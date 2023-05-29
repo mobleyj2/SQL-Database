@@ -15,7 +15,7 @@
 ---
 
 ## Description
-  undefined
+  This is an app to use for updating a database in SQl for employees at a small store.
 
 ---
 
@@ -35,12 +35,12 @@
 ---
 
 ## Contributions
-  undefined
+  tutoring,
 
 ---
 
 ## Test
-  undefined
+  
 
 ---
 
