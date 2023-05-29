@@ -1,16 +1,13 @@
-const express = require('express');
-const { response } = require('express');
+
 const mysql = require('mysql2');
 const inquirer= require('inquirer')
-const PORT = process.env.PORT || 3001;
-const app = express();
 
-// Express middleware
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+
+
+
 
 // Connect to database
-const db = mysql.createConnection(
+const connection = mysql.createConnection(
   {
     host: 'localhost',
     // MySQL username,
@@ -20,7 +17,10 @@ const db = mysql.createConnection(
     database: 'STORES_db'
   },
   console.log(`Connected to the STORES_db database.`)
+  
+
 );
+ValidEmployees()
  function ValidEmployees(){
     inquirer
     .prompt({
@@ -53,27 +53,91 @@ const db = mysql.createConnection(
       }
     });
  }
+ const AddEmployee = () => {
+  inquirer
+  .prompt([
+    {
+      name: "firstName", type: "input", message: "Enter New Employee First Name",
+      validate: (input) =>{
+        if (!input) {return 'Empty Field'}
+        return true;
+      },
+    },
+    {
+      name: "lastName", type: "input", message: "Enter New Employee Last Name",
+      validate: (input) =>{
+        if (!input) {return 'Empty Field'}
+        return true;
+      },
+    },
+      {
+        name: "roleId", type: "input", message: "Enter New Employee Role Id",
+        validate: (input) =>{
+          if (!input) {return 'Empty Field'}
+          return true;
+        },
+      }
+  ])
+  .then(response =>{
+    connection.query("Insert into Employee set ?",
+    {first_name: response.firstName, last_name: response.lastName, role_id: parseInt(response.roleId)},
+    (err,res) => {
+      console.log(err)
+      if (err) {
+      console.log ('Invalid Id');
+      AddEmployee();
+      return;
+    }
+    console.log(`${response.firstName} ${response.lastName} has been added`);
+    ValidEmployees();
+    });
+  });
+};
+const viewEmployees =() => {
+  connection.query(`SELECT * FROM employee`
+  
+   ,(err, res) => {
+    if (err) throw err; 
+    console.table(res);
+    ValidEmployees()
+  })
+
+  
+};
+
 const AddDepartment =() => {
   inquirer
   .prompt({ 
-    name:"NewDepartment", type: "input", message: "Enter name for new department",
+    name:"newDepartment", type: "input", message: "Enter name for new department?",
     validate:(input) =>{
       if (!input) {return 'No accept an empty input';}
       return true;
 
     },
   })
-  .then(responce =>{
-    Connection.query("Insert into Department",
-    {name: responce.newDepartment},
+  .then(response =>{
+    connection.query("Insert into department set ?",
+    {name: response.newDepartment},
     (err,res) => {
       if (err) throw err;
-      console.log(`${responce.newDepartment} Added succesfully.`);
-      employeeRoster();
+      console.log(`${response.newDepartment} Added succesfully.`);
+      ValidEmployees();
     }
     );
   });
 };
+const viewDepartments =() => {
+  connection.query(`SELECT * FROM department`
+  
+   ,(err, res) => {
+    if (err) throw err; 
+    console.table(res);
+    ValidEmployees()
+  })
+};
+
+
+
 const addRole =() =>{
   inquirer
   .prompt([
@@ -102,136 +166,94 @@ const addRole =() =>{
             },
           }
   ])
-  .then(responce =>{
-    connection.query("Insert into role",
+  .then(response =>{
+    connection.query("Insert into role set ?",
     {
-      title: responce.roleTitle,
-      salary: parseInt(responce.roleSalary),
-      department_id: parseInt(responce.department_id)
+      title: response.roleTitle,
+      salary: parseInt(response.roleSalary),
+      department_id: parseInt(response.departmentId)
     },
     (err,res) => {
       if (err) throw err;
-      console.log(`${responce.roleTitle} Added succesfully.`);
-      employeeRoster();
+      console.log(`${response.roleTitle} Added succesfully.`);
+      ValidEmployees();
     }
+    
     );
+    
 
   });
-  const AddEmployee = () => {
+
+};
+
+const viewRole =() => {
+  connection.query(`SELECT * FROM role`
+  
+   ,(err, res) => {
+    if (err) throw err; 
+    console.table(res);
+    ValidEmployees()
+  });
+  
+};
+const updateRole = () => {
+  connection.query (`
+  SELECT id, first_name, last_name
+  FROM employee`,
+  (err, res) => {
+    if (err) throw err;
     inquirer
     .prompt([
       {
-        name: "firstName", type: "input", message: "Enter New Employee First Name",
-        validate: (input) =>{
-          if (!input) {return 'Empty Field'}
-          return true;
-        },
+    name: "employeeId",
+    type: "input",
+    message: "enter employee id to update role",
+    validate: ( input ) => {
+     if( !input) {return 'No Empty Fields';}
+      return true;
+  
+  },
       },
       {
-        name: "lastName", type: "input", message: "Enter New Employee Last Name",
-        validate: (input) =>{
-          if (!input) {return 'Empty Field'}
+        name: "updateRoleId",
+        type: "input",
+        message: "enter new department id",
+        validate: ( input ) => {
+         if( !input) {return 'No Empty Fields';}
           return true;
-        },
+      
       },
-        {
-          name: "roleId", type: "input", message: "Enter New Employee First Name",
-          validate: (input) =>{
-            if (!input) {return 'Empty Field'}
-            return true;
           },
-        }
+  
     ])
-    .then(responce =>{
-      connection.query("Insert into Employee set",
-      {first_name: responce.firstName, last_name: responce.lastName, role_id: parseInt(responce.roleId)},
+    .then(response =>{
+      let updateEmployeeRole =parseInt(response.employeeId);
+      let updateRoleId= parseInt(response.updateRoleId);
+      connection.query(`UPDATE employee SET role_id =${updateRoleId} WHERE id =${updateEmployeeRole}`,
       (err,res) => {
         if (err) {
-        console.log ('Invalid Id');
-        AddEmployee();
+          console.log(err)
+        console.log("Enter Valid ID");
+        updateRole();
         return;
+        
+        
       }
-      console.log(`${response.firstName} ${response.firstName} has been added`);
-      employeeRoster();
-      });
-    });
-  };
-const viewEmployees =() => {
-  connection.query(`
-  SELECT,
-  Distinct (e.id),
-  CONCAT (e.first_name,' ',e.last_name) AS employee_name,
+      
+      
+      
+      console.log("Updated")
+      ValidEmployees();
 
-  ORDER by e.id ASC LIMIT 100`
-  , (err, res) => {
-    if (err) throw err; 
-    console.table(res);
-    employeeRoster()
+      
+    });
+    
+  }
+  
+  )
+  
   })
   
-};
-
-const updateEmployeeRole = () => {
-connection.query (`
-SELECT id, first_name, last_name
-FROM employee`,
-(err, res) => {
-  if (err) throw err;
-  inquirer
-  .prompt([
-    {
-  name: "employeeId",
-  type: "input",
-  message: "enter employee id to update role",
-  validate: ( input ) => {
-   if( !input) {return 'No Empty Fields';}
-    return true;
-
-},
-    },
-    {
-      name: "updateRoleId",
-      type: "input",
-      message: "enter new department id",
-      validate: ( input ) => {
-       if( !input) {return 'No Empty Fields';}
-        return true;
-    
-    },
-        },
-
-  ])
-  .then(responce =>{
-    let updateEmployeeRole =parseInt(response.employeeId);
-    let updateRoleId= parseInt(response.updateEmployeeRole);
-    connection.query(`UPDATE employee SET role_id =${updatedRoleId} WHERE id =${updatedEmployeeRole}`,
-    (err,res) => {
-      if (err) {
-      console.log("Enter Valid ID");
-      updateEmployeeRole();
-      return;
-    }
-    console.log("Updated")
-    employeeRoster();
-  });
-}
-
-)
-
-
-// Query database
-db.query('SELECT * FROM departments_db', function (err, results) {
-  console.log(results);
-});
-
-// Default response for any other request (Not Found)
-app.use((req, res) => {
-  res.status(404).end();
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-})
-  })
-
-    }}
+      }
+      
+ 
